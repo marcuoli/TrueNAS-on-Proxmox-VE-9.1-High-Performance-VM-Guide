@@ -12,12 +12,6 @@ It focuses on host + VM configuration that avoids common virtualization pitfalls
 - Memory settings (no ballooning), caching/snapshot caveats, and stability checks
 - virtio networking recommendations and miscellaneous platform notes (e.g., TPM)
 
-### Suggested GitHub “About” (repo description)
-
-Best-practices guide for running TrueNAS SCALE as a high-performance VM on Proxmox VE 9.1 (HBA passthrough, ZFS correctness, stability).
-
-Structured for **GitHub Wiki** usage.
-
 ---
 
 ## 1. Scope and Design Principles

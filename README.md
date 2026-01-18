@@ -61,10 +61,26 @@ vfio_pci
 vfio_virqfd
 ```
 
-Then rebuild initramfs:
+Load modules now (no reboot) so you can validate quickly:
 
 ```bash
-update-initramfs -u -k all
+modprobe vfio vfio_iommu_type1 vfio_pci vfio_virqfd
+```
+
+Then rebuild initramfs so they’re available at early boot:
+
+```bash
+# Most common/safest: update the initramfs for the currently running kernel
+update-initramfs -u -k "$(uname -r)"
+
+# If you intentionally maintain multiple kernels, you can update all installed kernels
+# update-initramfs -u -k all
+```
+
+If your Proxmox installation uses `proxmox-boot-tool` (common with systemd-boot / ZFS-on-root), refresh the EFI boot partitions so the updated initramfs is actually picked up:
+
+```bash
+proxmox-boot-tool refresh
 ```
 
 Verify modules are loaded:

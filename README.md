@@ -133,6 +133,57 @@ update-initramfs -u
 qm set 100 -hostpci0 0000:04:10.0,pcie=1
 ```
 
+### ROM-Bar Setting
+
+**Do NOT enable ROM-Bar for HBA passthrough.**
+
+**What ROM-Bar is:**
+
+- Exposes the PCIe device's Option ROM (firmware blob) to the VM
+- Used for legacy BIOS boot (INT 13h), UEFI drivers, or GPU initialization
+
+**Why HBAs do NOT need ROM-Bar:**
+
+- TrueNAS does not boot from the HBA
+- HBA firmware is already initialized by the host
+- ZFS only needs controller registers and DMA access
+- The Option ROM provides no runtime functionality
+
+**Risks of enabling ROM-Bar unnecessarily:**
+
+| Risk              | Explanation                   |
+|-------------------|-------------------------------|
+| VM fails to start | BAR space conflicts           |
+| VFIO errors       | ROM cannot be mapped          |
+| IOMMU faults      | Seen on some AMD platforms    |
+| Slower boot       | ROM execution path            |
+| Migration issues  | ROM layout differences        |
+
+**Correct Proxmox settings for HBA passthrough:**
+
+In Proxmox UI:
+
+- ROM-Bar: ❌ **unchecked**
+- PCI-Express: ✅ **checked**
+- All Functions: ❌ **unchecked** (unless multi-function device)
+- Primary GPU: ❌ **unchecked**
+
+Equivalent CLI:
+
+```bash
+qm set 100 -hostpci0 0000:04:10.0,pcie=1
+```
+
+(No `rombar=1`)
+
+**When ROM-Bar is required (rare exceptions):**
+
+- GPUs without UEFI GOP (legacy GPUs or primary GPU passthrough)
+- NICs used for PXE boot inside the VM (not applicable to TrueNAS)
+- Very old server boards that fail to initialize the HBA without Option ROM execution (extremely uncommon)
+
+If the HBA does not appear in TrueNAS and passthrough is otherwise correct, *only then* test with `rombar=1`.
+
 ---
 
 ## 5. VM Core Configuration

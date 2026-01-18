@@ -44,7 +44,45 @@ Validate:
 ```bash
 dmesg | grep -e IOMMU -e DMAR
 ls /sys/kernel/iommu_groups/
+
+# Replace {node-name} with your Proxmox node name (shown by: hostname)
+# Pass an empty blacklist to show all PCI devices/classes
+pvesh get /nodes/{node-name}/hardware/pci --pci-class-blacklist ""
 ```
+
+### IOMMU / VFIO Modules (PCI Passthrough)
+
+Ensure the VFIO stack is available early at boot (especially important for binding devices to `vfio-pci`). Add the following to `/etc/modules`:
+
+```text
+vfio
+vfio_iommu_type1
+vfio_pci
+vfio_virqfd
+```
+
+Then rebuild initramfs:
+
+```bash
+update-initramfs -u -k all
+```
+
+Verify modules are loaded:
+
+```bash
+lsmod | grep -E '^(vfio|vfio_iommu_type1|vfio_pci|vfio_virqfd)'
+```
+
+Reference (Proxmox official docs):
+
+- [Proxmox VE Admin Guide – PCI Passthrough](https://pve.proxmox.com/pve-docs/pve-admin-guide.html#qm_pci_passthrough)
+
+What to verify (especially before PCI passthrough):
+
+- The command returns entries with an `iommugroup` value (not missing / not `-1`). This indicates IOMMU grouping is active.
+- Your target device (e.g., the HBA) appears with the expected vendor/device IDs and BDF address (the `id` field like `0000:04:10.0`).
+- The HBA’s `iommugroup` is isolated from unrelated devices you don’t want to passthrough. If multiple critical devices share the same group, passthrough safely requires moving them together or enabling proper ACS / different slot layout.
+- For passthrough candidates, check the presence of a usable reset capability (`reset` / `reset_method` fields when shown). Lack of reset can cause VM reboot/shutdown issues on some hardware.
 
 ---
 
